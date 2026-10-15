@@ -1,0 +1,59 @@
+# GitHub Pages 배포 (royalnco 조직 저장소)
+# - 정적 export 결과(out/)만 배포한다. 원본 엑셀·평문 집계는 저장소에 없으며, 암호화된 집계(public/data/dashboard.enc.json)만 게시한다.
+# - 비공개 게시: 저장소 Settings → Pages → Visibility 를 Private 로 설정 (GitHub Enterprise Cloud 필요)
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: 암호화 데이터 확인
+        run: |
+          test -f public/data/dashboard.enc.json || { echo "public/data/dashboard.enc.json 이 없습니다. preprocess → encrypt 후 커밋하십시오."; exit 1; }
+          if [ -f public/data/dashboard.json ]; then echo "평문 집계 파일(public/data/dashboard.json)은 게시할 수 없습니다."; exit 1; fi
+          node -e "const p=require('./public/data/dashboard.enc.json'); if (p.weak) { console.error('약한 비밀번호(테스트용)로 암호화된 파일입니다. 10자 이상 비밀번호로 다시 암호화하십시오.'); process.exit(1) } console.log('accounts:', Object.keys(p.users).length)"
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

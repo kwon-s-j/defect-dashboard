@@ -1,0 +1,13 @@
+{
+  "_comment": "제품코드 접두어 → 제품군 매핑. 위에서부터 먼저 일치하는 규칙 적용. 예외 접두어(RBT 등)는 일반 규칙보다 위에 둔다.",
+  "rules": [
+    { "prefix": "RBT", "group": "수전" },
+    { "prefix": "RB", "group": "비데" },
+    { "prefix": "RWL", "group": "도기" },
+    { "prefix": "RWC", "group": "도기" },
+    { "prefix": "RWU", "group": "소변기" },
+    { "prefix": "RK", "group": "주방수전" },
+    { "prefix": "RF", "group": "수전" }
+  ],
+  "default": "기타"
+}
